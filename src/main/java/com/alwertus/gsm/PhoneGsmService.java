@@ -11,7 +11,7 @@ import java.util.ArrayList;
 public class PhoneGsmService {
     private SerialPort serialPort;
     private String result;
-    public static String[] SmsStorage = new String[]{"MT", "SM"};
+    public static String[] SmsStorage = new String[]{"ME", "SM"}; // was MT, SM
     ;
 
     /**
@@ -81,19 +81,23 @@ public class PhoneGsmService {
         return str;
     }
 
+    public void prepareForReadSms() {
+        executeAT("ATE1", 1); // set echo ON
+//        executeAT("ATE0", 1); // set echo OFF
+        executeAT("AT+CSCS=\"GSM\"", 1); // set 7-bit alphabet
+        executeAT("AT+CMGF=1", 1); // set sms format = text
+    }
+
     /**
      * Read the sms stored in the sim card
      *
      * @return ArrayList contains the sms
      */
     public ArrayList<PhoneSms> readSms() {
-        executeAT("ATE0", 1);
-        executeAT("AT+CSCS=\"GSM\"", 1);
-        executeAT("AT+CMGF=1", 1);
         ArrayList<PhoneSms> str = new ArrayList<>();
-        for (String value : SmsStorage) {
-            executeAT("AT+CPMS=\"" + value + "\"", 1);
-            executeAT("AT+CMGL=\"ALL\"", 5);
+        for (String value : SmsStorage) { // foreach memory storage (MT=>error, SM=success)
+            executeAT("AT+CPMS=\"" + value + "\"", 1); // set preffer memory area
+            executeAT("AT+CMGL=\"ALL\"", 5); // read sms list
             if (result.contains("+CMGL")) {
                 String[] strs = result.replace("\"", "").split("(?:,)|(?:\r\n)");
                 PhoneSms sms;
